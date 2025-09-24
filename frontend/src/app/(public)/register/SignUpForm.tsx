@@ -431,9 +431,18 @@ export function SignUpForm() {
   return (
     <Card className="w-full max-w-lg mx-auto px-5 my-5  shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
       <CardHeader className="text-center pb-6">
-        <div className="mx-auto w-16 h-16 bg-gradient-to-br bg-black rounded-full flex items-center justify-center mb-4 shadow-lg">
-          <Sparkles className="w-8 h-8 text-white" />
+        <div className="mx-auto w-16 h-16">
+          <svg viewBox="0 0 64 64" className="w-full h-full">
+            <circle cx="32" cy="32" r="30" fill="#F4C27A" stroke="#D9A066" strokeWidth="2" />
+            <circle cx="12" cy="12" r="8" fill="#F4C27A" stroke="#D9A066" strokeWidth="2" />
+            <circle cx="52" cy="12" r="8" fill="#F4C27A" stroke="#D9A066" strokeWidth="2" />
+            <circle cx="22" cy="32" r="4" fill="#000" />
+            <circle cx="42" cy="32" r="4" fill="#000" />
+            <ellipse cx="32" cy="42" rx="4" ry="3" fill="#000" />
+            <path d="M28 46 Q32 50 36 46" stroke="#000" strokeWidth="2" fill="none" strokeLinecap="round" />
+          </svg>
         </div>
+
         <CardTitle className="text-3xl font-bold text-black">
           Register
         </CardTitle>
