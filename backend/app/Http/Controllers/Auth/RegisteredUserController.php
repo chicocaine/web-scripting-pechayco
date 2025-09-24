@@ -4,47 +4,49 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules;
 
 class RegisteredUserController extends Controller
 {
     /**
      * Handle an incoming registration request.
+     *
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request)
+    public function store(Request $request): Response
     {
-        // Validate input
         $request->validate([
-            'full_name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => ['required', 'confirmed', Password::defaults()],
-            'gender' => 'required|in:male,female,other',
-            'hobbies' => 'nullable|array',
-            'hobbies.*' => 'string|max:255',
-            'country' => 'nullable|string|max:255',
+            'name' => ['required', 'string', 'max:255'],
+            'username'  => ['required', 'string', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'gender'    => ['string'],
+            'hobbies'   => ['array'],
+            'hobbies.*' => ['string'],
+            'country'   => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Create user
         $user = User::create([
-            'full_name' => $request->full_name,
-            'username' => $request->username,
+            'name' => $request->name,
+            'username'  => $request->username,
             'email' => $request->email,
-            'password' => $request->password, // will auto-hash in User model
-            'gender' => $request->gender,
-            'hobbies' => $request->hobbies,   // array will be cast to JSON automatically
-            'country' => $request->country,
+            'password' => Hash::make($request->string('password')),
+            'gender'    => $request->gender,
+            'hobbies'   => $request->hobbies, 
+            'country'   => $request->country,
+
+
         ]);
 
-        // Optional: log in the user immediately
+        event(new Registered($user));
+
         Auth::login($user);
 
-        // Return JSON response with the created user (without password)
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user,
-        ], 201);
+        return response()->noContent();
     }
 }
