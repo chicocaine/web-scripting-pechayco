@@ -1,198 +1,192 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
-import { useState } from "react";
-import { CircleAlert, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
-import Link from "next/link";
-import { useAuth } from "@/hooks/auth";
+import { useState, ChangeEvent, FormEvent } from "react";
+import axios, { AxiosError } from "axios";
 
-export function SignUpForm() {
-  const { register } = useAuth({
-    middleware: "guest",
-    redirectIfAuthenticated: "/dashboard",
-  });
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
+const API_URL = "http://localhost:8000/api"; // Laravel backend URL
+
+type FormData = {
+  full_name: string;
+  username: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  gender: string;
+  hobbies: string[];
+  country: string;
+};
+
+const hobbiesOptions = ["Reading", "Gaming", "Traveling", "Sports"];
+const countries = ["USA", "UK", "Canada", "Australia"];
+
+export default function RegisterPage() {
+  const [form, setForm] = useState<FormData>({
+    full_name: "",
+    username: "",
     email: "",
     password: "",
-    confirmPassword: "",
+    password_confirmation: "",
+    gender: "",
+    hobbies: [],
+    country: "",
   });
-  const [errors, setErrors] = useState<Record<string, string[]>>({});
 
-  // Handle input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [message, setMessage] = useState<string>("");
+
+  // Handle text / select inputs
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    await register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      password_confirmation: formData.confirmPassword,
-      setErrors,
+  // Handle checkboxes (hobbies)
+  const handleHobbyChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setForm((prev) => {
+      const hobbies = new Set(prev.hobbies);
+      if (checked) hobbies.add(value);
+      else hobbies.delete(value);
+      return { ...prev, hobbies: Array.from(hobbies) };
     });
-    setLoading(true);
   };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  // Submit form
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setMessage("");
+    try {
+      const res = await axios.post(`${API_URL}/register`, form);
+      setMessage(res.data.message);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Registration failed");
+      } else if (err instanceof Error) {
+        setMessage(err.message);
+      } else {
+        setMessage("Registration failed");
+      }
+      console.error(err);
+    }
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center
-     bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900
-      dark:to-gray-950 p-4"
-    >
-      <Card className="w-full max-w-md shadow-lg border-x-0 border-b-0 border-t-4 border-primary">
-        <CardHeader className="space-y-1">
-          <div className="flex justify-center mb-2">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="h-6 w-6 text-primary" />
-            </div>
+    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow">
+      <h1 className="text-2xl font-bold mb-4">Register</h1>
+      {message && <p className="mb-4 text-green-600">{message}</p>}
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="text"
+          name="full_name"
+          value={form.full_name}
+          onChange={handleChange}
+          placeholder="Full Name"
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          type="text"
+          name="username"
+          value={form.username}
+          onChange={handleChange}
+          placeholder="Username"
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          placeholder="Email"
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          type="password"
+          name="password"
+          value={form.password}
+          onChange={handleChange}
+          placeholder="Password"
+          className="border p-2 rounded"
+          required
+        />
+        <input
+          type="password"
+          name="password_confirmation"
+          value={form.password_confirmation}
+          onChange={handleChange}
+          placeholder="Confirm Password"
+          className="border p-2 rounded"
+          required
+        />
+
+        {/* Gender */}
+        <div>
+          <label className="block mb-1 font-semibold">Gender:</label>
+          <div className="flex gap-4">
+            {["male", "female", "other"].map((g) => (
+              <label key={g} className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="gender"
+                  value={g}
+                  checked={form.gender === g}
+                  onChange={handleChange}
+                  required
+                />
+                {g.charAt(0).toUpperCase() + g.slice(1)}
+              </label>
+            ))}
           </div>
-          <CardTitle className="text-center text-2xl font-bold">
-            Create an Account
-          </CardTitle>
-          <CardDescription className="text-center">
-            Enter your details to create your account
-          </CardDescription>
-        </CardHeader>
+        </div>
 
-        <CardContent>
-          {errors && Object.keys(errors).length > 0 && (
-            <div
-              className="flex items-center gap-2
-            bg-destructive/10 text-destructive text-sm p-3 rounded-md mb-4"
-            >
-              <CircleAlert size={16} />
-              {errors[Object.keys(errors)[0]][0]}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                Name
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  name="name"
-                  type="name"
-                  placeholder="John Doe"
-                  className="pl-10"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
+        {/* Hobbies */}
+        <div>
+          <label className="block mb-1 font-semibold">Hobbies:</label>
+          <div className="flex flex-wrap gap-2">
+            {hobbiesOptions.map((h) => (
+              <label key={h} className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  value={h}
+                  checked={form.hobbies.includes(h)}
+                  onChange={handleHobbyChange}
                 />
-              </div>
-            </div>
+                {h}
+              </label>
+            ))}
+          </div>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  className="pl-10"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
+        {/* Country */}
+        <div>
+          <label className="block mb-1 font-semibold">Country:</label>
+          <select
+            name="country"
+            value={form.country}
+            onChange={handleChange}
+            className="border p-2 rounded w-full"
+            required
+          >
+            <option value="">Select Country</option>
+            {countries.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium">
-                Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating Account..." : "Sign Up"}
-            </Button>
-          </form>
-        </CardContent>
-
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-center text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/" className="text-primary hover:underline">
-              Sign In
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+        <button
+          type="submit"
+          className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 transition"
+        >
+          Register
+        </button>
+      </form>
     </div>
   );
 }
