@@ -1,4 +1,4 @@
-# Project Name
+# Lab Activity 2
 
 This repository contains a **Laravel** backend and a **Next.js** frontend. Follow the instructions below to run the project locally.
 
