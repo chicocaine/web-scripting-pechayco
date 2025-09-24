@@ -4,38 +4,47 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rules\Password;
 
 class RegisteredUserController extends Controller
 {
     /**
      * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): Response
+    public function store(Request $request)
     {
+        // Validate input
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'full_name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'gender' => 'required|in:male,female,other',
+            'hobbies' => 'nullable|array',
+            'hobbies.*' => 'string|max:255',
+            'country' => 'nullable|string|max:255',
         ]);
 
+        // Create user
         $user = User::create([
-            'name' => $request->name,
+            'full_name' => $request->full_name,
+            'username' => $request->username,
             'email' => $request->email,
-            'password' => Hash::make($request->string('password')),
+            'password' => $request->password, // will auto-hash in User model
+            'gender' => $request->gender,
+            'hobbies' => $request->hobbies,   // array will be cast to JSON automatically
+            'country' => $request->country,
         ]);
 
-        event(new Registered($user));
-
+        // Optional: log in the user immediately
         Auth::login($user);
 
-        return response()->noContent();
+        // Return JSON response with the created user (without password)
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $user,
+        ], 201);
     }
 }
